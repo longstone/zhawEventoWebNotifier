@@ -82,7 +82,6 @@ request.get(baseUrl, requestOptions(), function (err, response, body) {
         failed(err);
         return;
     }
-    var cookies = response.cookies;
     // Get the response body (JSON parsed - JSON response or jQuery object in case of XML response)
     var $ = cheerio.load(response.body);
     var loginUrl = 'https://eventoweb.zhaw.ch/cst_pages/login.aspx';
@@ -91,7 +90,6 @@ request.get(baseUrl, requestOptions(), function (err, response, body) {
             failed(err);
             return;
         }
-        cookies = response.cookies;
         var loginUrl = baseUrl + 'cst_pages/login.aspx';
         //console.log('posting to url: ' + loginUrl); // login.aspx
         var $ = cheerio.load(response.body);
@@ -110,7 +108,6 @@ request.get(baseUrl, requestOptions(), function (err, response, body) {
             }
             // Get the response body
             //console.log(response.statusCode);
-            var cookies = response.cookies;
             var $ = cheerio.load(response.body);
             var getGradesUrl = baseUrl + cheerio.load(response.body)('#ctl00_WebPartManager1_gwpTreeNavigation1_TreeNavigation1_oTreeViewt10').attr('href');
             //console.log('GET ' + getGradesUrl);
