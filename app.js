@@ -58,7 +58,13 @@ var failed = function (err) {
     console.log(err);
 };
 var request = request.defaults({jar: true});
-var j = request.jar()
+var j = request.jar();
+/**
+ * some base headers, with the possibility to add a user defined key/value pair
+ * @param key
+ * @param value
+ * @returns {{followAllRedirects: boolean, jar: boolean, jar: boolean, headers: {User-Agent: string}}}
+ */
 var requestOptions = function requestOptionsF(key, value) {
     var options =  {
         followAllRedirects: true, jar: true, jar: j,
