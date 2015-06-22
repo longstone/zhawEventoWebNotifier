@@ -57,8 +57,8 @@ var baseUrl = 'https://eventoweb.zhaw.ch/';
 var failed = function (err) {
     console.log(err);
 };
-var request = request.defaults({jar: true});
 var j = request.jar();
+var request = request.defaults({jar: j});
 /**
  * some base headers, with the possibility to add a user defined key/value pair
  * @param key
@@ -66,14 +66,14 @@ var j = request.jar();
  * @returns {{followAllRedirects: boolean, jar: boolean, jar: boolean, headers: {User-Agent: string}}}
  */
 var requestOptions = function requestOptionsF(key, value) {
-    var options =  {
-        followAllRedirects: true, jar: true, jar: j,
+    var options = {
+        followAllRedirects: true,
         headers: {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:18.0) Gecko/20100101 Firefox/18.0'
         }
     };
-    if(typeof key !== 'undefined'){
-        options[key]=value;
+    if (typeof key !== 'undefined') {
+        options[key] = value;
     }
     return options;
 };
@@ -90,7 +90,6 @@ request.get(baseUrl, requestOptions(), function (err, response, body) {
             failed(err);
             return;
         }
-        var loginUrl = baseUrl + 'cst_pages/login.aspx';
         //console.log('posting to url: ' + loginUrl); // login.aspx
         var $ = cheerio.load(response.body);
         var parameters = {}
@@ -99,27 +98,27 @@ request.get(baseUrl, requestOptions(), function (err, response, body) {
         });
         parameters['ctl00$WebPartManager1$gwpLogin1$Login1$LoginMask$UserName'] = process.env.ENV_USR;
         parameters['ctl00$WebPartManager1$gwpLogin1$Login1$LoginMask$Password'] = process.env.ENV_PW;
-        request.post(baseUrl + 'cst_pages/login.aspx',
-            requestOptions('form',parameters)
-       , function (err, response, body) {
-            if (err) {
-                failed(err);
-                return;
-            }
-            // Get the response body
-            //console.log(response.statusCode);
-            var $ = cheerio.load(response.body);
-            var getGradesUrl = baseUrl + cheerio.load(response.body)('#ctl00_WebPartManager1_gwpTreeNavigation1_TreeNavigation1_oTreeViewt10').attr('href');
-            //console.log('GET ' + getGradesUrl);
-            request.get(getGradesUrl, requestOptions(), function (err, response, body) {
+        request.post('https://eventoweb.zhaw.ch/cst_pages/login.aspx',
+            requestOptions('form', parameters)
+            , function (err, response, body) {
+                if (err) {
+                    failed(err);
+                    return;
+                }
+                // Get the response body
+                //console.log(response.statusCode);
+                var $ = cheerio.load(response.body);
+
+                //console.log('GET ' + getGradesUrl);
+                request.get(baseUrl + $('#ctl00_WebPartManager1_gwpTreeNavigation1_TreeNavigation1_oTreeViewt10').attr('href'), requestOptions(), function (err, response, body) {
                     if (err) {
                         failed(err);
                         return;
                     }
                     //console.log(response.statusCode);
-                    //if (body.indexOf('gesperrt') > -1) {
-                    //    console.log('hurrra!');
-                    //}
+                    if (body.indexOf('gesperrt') > -1) {
+                        console.log('hurrra!');
+                    }
                     var $ = cheerio.load(response.body);
                     var grades = [];
                     var cleanedElemenents = [];
@@ -166,16 +165,39 @@ request.get(baseUrl, requestOptions(), function (err, response, body) {
                         return addSpacesCount(spacesToAdd);
                     }
 
+                    var whopwhop = '';
                     grades.forEach(function (elem) {
                         var course = elem.kurs.substr('w.BA.XX.'.length).replace('.XX.GK', '');
                         course = course + addSpaces(course.length);
+                        var line = course + ' : ' + elem.grade;
+                        if (elem.grade !== 'gesperrt') {
+                            whopwhop += line + '\n';
+                        }
+                        console.log(line);
 
-                        console.log(course + ' : ' + elem.grade);
                     });
-                }
-            )
-            ;
-        });
-    });
+                    if (whopwhop === '') {
+                        console.log('no telegram send');
+                    } else {
+                        var options = {
+                            json: {
+                                phoneNumber: process.env.PHONE,
+                                apiHash: process.env.HASH,
+                                message: whopwhop
+                            }
+                        };
 
+                        request.post('http://www.api.notificatio.me/v1/user/message', options, function (error, response, body) {
+                            if (!error && response.statusCode == 200) {
+                                console.log(body); // Print the shortened url.
+                            } else {
+                                //  console.log(response);
+                                console.log(error);
+                            }
+                        });
+                    }
+                });
+            });
+    });
 });
+
