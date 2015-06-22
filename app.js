@@ -4,7 +4,7 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-
+var fs = require("fs");
 var app = express();
 var request = require('request');
 var cheerio = require('cheerio');
@@ -165,20 +165,38 @@ request.get(baseUrl, requestOptions(), function (err, response, body) {
                         return addSpacesCount(spacesToAdd);
                     }
 
+                    var sent = require("./sent.json");
                     var whopwhop = '';
                     grades.forEach(function (elem) {
                         var course = elem.kurs.substr('w.BA.XX.'.length).replace('.XX.GK', '');
                         course = course + addSpaces(course.length);
                         var line = course + ' : ' + elem.grade;
                         if (elem.grade !== 'gesperrt') {
-                            whopwhop += line + '\n';
+                            if (elem.kurs in sent) {
+                                console.log('not sending ' + course)
+                            } else {
+                                sent[elem.kurs] = elem.grade;
+                                whopwhop += line + '\n';
+                            }
+
+
                         }
+
+
                         console.log(line);
 
                     });
                     if (whopwhop === '') {
                         console.log('no telegram send');
                     } else {
+                        fs.writeFile("sent.json", JSON.stringify(sent), "utf8", function(err) {
+                            if(err) {
+                                console.log('file save error');
+                                return console.log(err);
+                            }
+
+                            console.log("The file was saved!");
+                        });
                         var options = {
                             json: {
                                 phoneNumber: process.env.PHONE,
