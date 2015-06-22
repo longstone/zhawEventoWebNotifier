@@ -59,12 +59,19 @@ var failed = function (err) {
 };
 var request = request.defaults({jar: true});
 var j = request.jar()
-request.get(baseUrl, {
-    followAllRedirects: true, jar: true, jar: j,
-    headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:18.0) Gecko/20100101 Firefox/18.0'
+var requestOptions = function requestOptionsF(key, value) {
+    var options =  {
+        followAllRedirects: true, jar: true, jar: j,
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:18.0) Gecko/20100101 Firefox/18.0'
+        }
+    };
+    if(typeof key !== 'undefined'){
+        options[key]=value;
     }
-}, function (err, response, body) {
+    return options;
+};
+request.get(baseUrl, requestOptions(), function (err, response, body) {
     if (err) {
         failed(err);
         return;
@@ -73,12 +80,7 @@ request.get(baseUrl, {
     // Get the response body (JSON parsed - JSON response or jQuery object in case of XML response)
     var $ = cheerio.load(response.body);
     var loginUrl = 'https://eventoweb.zhaw.ch/cst_pages/login.aspx';
-    request.get(loginUrl, {
-        followAllRedirects: true, jar: true, jar: j,
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:18.0) Gecko/20100101 Firefox/18.0'
-        }
-    }, function (err, response, body) {
+    request.get(loginUrl, requestOptions(), function (err, response, body) {
         if (err) {
             failed(err);
             return;
@@ -93,11 +95,9 @@ request.get(baseUrl, {
         });
         parameters['ctl00$WebPartManager1$gwpLogin1$Login1$LoginMask$UserName'] = process.env.ENV_USR;
         parameters['ctl00$WebPartManager1$gwpLogin1$Login1$LoginMask$Password'] = process.env.ENV_PW;
-        request.post(baseUrl + 'cst_pages/login.aspx', {
-            followAllRedirects: true, jar: true, form: parameters, jar: j, headers: {
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:18.0) Gecko/20100101 Firefox/18.0'
-            }
-        }, function (err, response, body) {
+        request.post(baseUrl + 'cst_pages/login.aspx',
+            requestOptions('form',parameters)
+       , function (err, response, body) {
             if (err) {
                 failed(err);
                 return;
@@ -108,11 +108,7 @@ request.get(baseUrl, {
             var $ = cheerio.load(response.body);
             var getGradesUrl = baseUrl + cheerio.load(response.body)('#ctl00_WebPartManager1_gwpTreeNavigation1_TreeNavigation1_oTreeViewt10').attr('href');
             //console.log('GET ' + getGradesUrl);
-            request.get(getGradesUrl, {
-                    followAllRedirects: true, jar: true, jar: j, headers: {
-                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:18.0) Gecko/20100101 Firefox/18.0'
-                    }
-                }, function (err, response, body) {
+            request.get(getGradesUrl, requestOptions(), function (err, response, body) {
                     if (err) {
                         failed(err);
                         return;
@@ -153,11 +149,13 @@ request.get(baseUrl, {
 
                     }
                     function addSpaces(length) {
-                        var spacesToAdd = 10-length;
-                        if(spacesToAdd < 0){return;}
+                        var spacesToAdd = 10 - length;
+                        if (spacesToAdd < 0) {
+                            return;
+                        }
                         function addSpacesCount(spacesToAdd) {
-                            if(spacesToAdd>0){
-                                return " " + addSpacesCount(spacesToAdd-1);
+                            if (spacesToAdd > 0) {
+                                return " " + addSpacesCount(spacesToAdd - 1);
                             }
                             return "";
                         }
@@ -165,11 +163,11 @@ request.get(baseUrl, {
                         return addSpacesCount(spacesToAdd);
                     }
 
-                    grades.forEach(function(elem){
-                        var course = elem.kurs.substr('w.BA.XX.'.length).replace('.XX.GK','');
+                    grades.forEach(function (elem) {
+                        var course = elem.kurs.substr('w.BA.XX.'.length).replace('.XX.GK', '');
                         course = course + addSpaces(course.length);
 
-                        console.log(course +' : '+ elem.grade);
+                        console.log(course + ' : ' + elem.grade);
                     });
                 }
             )
