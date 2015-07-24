@@ -13,6 +13,7 @@
     "express": "~4.12.4",
     "jade": "~1.9.2",
     "morgan": "~1.5.3",
+    "notificatio-me": "^1.0.1",
     "request": "^2.58.0",
     "requestify": "^0.1.17",
     "serve-favicon": "~2.2.1",
