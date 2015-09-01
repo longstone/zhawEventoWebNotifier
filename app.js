@@ -8,6 +8,7 @@ var fs = require("fs");
 var app = express();
 var request = require('request');
 var cheerio = require('cheerio');
+var notificatiome = require('notificatio-me');
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -167,6 +168,7 @@ request.get(baseUrl, requestOptions(), function (err, response, body) {
 
                     var sent = require("./sent.json");
                     var whopwhop = '';
+                    grades.push({kurs:'w.BA.XX.asdfasdfadsf.XX.GK',grade:12.3 });
                     grades.forEach(function (elem) {
                         var course = elem.kurs.substr('w.BA.XX.'.length).replace('.XX.GK', '');
                         course = course + addSpaces(course.length);
@@ -197,22 +199,10 @@ request.get(baseUrl, requestOptions(), function (err, response, body) {
 
                             console.log("The file was saved!");
                         });
-                        var options = {
-                            json: {
-                                phoneNumber: process.env.PHONE,
-                                apiHash: process.env.HASH,
-                                message: whopwhop
-                            }
-                        };
+                        var notificatiome = require('notificatio-me');
+                        notificatiome.send(process.env.HASH,process.env.PHONE,whopwhop)
+                            .then(function(success){ console.log(success)},function(error){console.log(error)});
 
-                        request.post('http://www.api.notificatio.me/v1/user/message', options, function (error, response, body) {
-                            if (!error && response.statusCode == 200) {
-                                console.log(body); // Print the shortened url.
-                            } else {
-                                //  console.log(response);
-                                console.log(error);
-                            }
-                        });
                     }
                 });
             });
