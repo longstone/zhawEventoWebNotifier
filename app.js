@@ -8,6 +8,8 @@ var fs = require("fs");
 var app = express();
 var request = require('request');
 var cheerio = require('cheerio');
+require('dotenv').load();
+
 var notificatiome = require('notificatio-me');
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -20,6 +22,12 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(cookieParser());
 
+['ENV_USR','ENV_PW'].forEach(function(propName){
+if (!process.env.hasOwnProperty(propName)){
+        console.error('no '+propName);
+    return
+};
+});
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
@@ -129,11 +137,16 @@ request.get(baseUrl, requestOptions(), function (err, response, body) {
 
                             }
                             $(elem).find('td').each(function (index, elem) {
-                                var txt = $(elem).html()
-                                if ($(txt).length > 0) {
+
+                                var txt = '';
+                                if('&#xA0;'!==$(elem).html() ){txt=$(elem).html();}
+                                if ( $(txt).length > 0) {
 // need to textify
                                     txt = $(elem).text();
+                                }else{
+                                    txt = txt.length >0 ? txt :'gesperrt';
                                 }
+//console.log(txt);
                                 cleanedElemenents.push(txt);
                             });
 
@@ -152,7 +165,7 @@ request.get(baseUrl, requestOptions(), function (err, response, body) {
 
                     }
                     function addSpaces(length) {
-                        var spacesToAdd = 10 - length;
+                        var spacesToAdd = 30 - length;
                         if (spacesToAdd < 0) {
                             return;
                         }
@@ -168,14 +181,14 @@ request.get(baseUrl, requestOptions(), function (err, response, body) {
 
                     var sent = require("./sent.json");
                     var whopwhop = '';
-                    grades.push({kurs:'w.BA.XX.asdfasdfadsf.XX.GK',grade:12.3 });
+
                     grades.forEach(function (elem) {
-                        var course = elem.kurs.substr('w.BA.XX.'.length).replace('.XX.GK', '');
+                        var course = elem.kurs.replace('w.BA.XX.','').replace('w.MA.XX.','');
                         course = course + addSpaces(course.length);
                         var line = course + ' : ' + elem.grade;
                         if (elem.grade !== 'gesperrt') {
                             if (elem.kurs in sent) {
-                                console.log('not sending ' + course)
+                              //  console.log('not sending ' + course)
                             } else {
                                 sent[elem.kurs] = elem.grade;
                                 whopwhop += line + '\n';
@@ -185,7 +198,7 @@ request.get(baseUrl, requestOptions(), function (err, response, body) {
                         }
 
 
-                        console.log(line);
+                    //    console.log(line);
 
                     });
                     if (whopwhop === '') {
