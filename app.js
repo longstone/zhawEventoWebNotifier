@@ -9,8 +9,8 @@ var app = express();
 var request = require('request');
 var cheerio = require('cheerio');
 require('dotenv').load();
+var notifier = require('./notifier');
 
-var notificatiome = require('notificatio-me');
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -22,11 +22,12 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(cookieParser());
 
-['ENV_USR','ENV_PW'].forEach(function(propName){
-if (!process.env.hasOwnProperty(propName)){
-        console.error('no '+propName);
-    return
-};
+['ENV_USR', 'ENV_PW','TEXT_MAGIC_KEY','TEXT_MAGIC_USR','PHONE'].forEach(function (propName) {
+    if (!process.env.hasOwnProperty(propName)) {
+        console.error('no ' + propName);
+        return
+    }
+    
 });
 
 // catch 404 and forward to error handler
@@ -79,7 +80,8 @@ var requestOptions = function requestOptionsF(key, value) {
         followAllRedirects: true,
         headers: {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:18.0) Gecko/20100101 Firefox/18.0'
-        }
+        },
+        encoding: 'binary'
     };
     if (typeof key !== 'undefined') {
         options[key] = value;
@@ -139,12 +141,14 @@ request.get(baseUrl, requestOptions(), function (err, response, body) {
                             $(elem).find('td').each(function (index, elem) {
 
                                 var txt = '';
-                                if('&#xA0;'!==$(elem).html() ){txt=$(elem).html();}
-                                if ( $(txt).length > 0) {
+                                if ('&#xA0;' !== $(elem).html()) {
+                                    txt = $(elem).html();
+                                }
+                                if ($(txt).length > 0) {
 // need to textify
                                     txt = $(elem).text();
-                                }else{
-                                    txt = txt.length >0 ? txt :'gesperrt';
+                                } else {
+                                    txt = txt.length > 0 ? txt : 'gesperrt';
                                 }
 //console.log(txt);
                                 cleanedElemenents.push(txt);
@@ -182,39 +186,45 @@ request.get(baseUrl, requestOptions(), function (err, response, body) {
                     var sent = require("./sent.json");
                     var whopwhop = '';
 
-                    grades.forEach(function (elem) {
-                        var course = elem.kurs.replace('w.BA.XX.','').replace('w.MA.XX.','');
+                    grades.filter(function(elem){return elem.semester === new Date().getFullYear() + '.'+ (new Date().getMonth() > 9 || new Date().getMonth() < 3 ? 'HS' : 'FS' )}).forEach(function (elem) {
+                        var course = elem.kurs.replace('w.BA.XX.', '').replace('w.MA.XX.', '');
                         course = course + addSpaces(course.length);
                         var line = course + ' : ' + elem.grade;
                         if (elem.grade !== 'gesperrt') {
                             if (elem.kurs in sent) {
-                              //  console.log('not sending ' + course)
+                                console.log('not sending ' + course)
                             } else {
                                 sent[elem.kurs] = elem.grade;
                                 whopwhop += line + '\n';
                             }
 
 
+                        }else{
+                            console.log('still blocked: ',course);
                         }
 
 
-                    //    console.log(line);
+                        //    console.log(line);
 
                     });
                     if (whopwhop === '') {
                         console.log('no telegram send');
                     } else {
-                        fs.writeFile("sent.json", JSON.stringify(sent), "utf8", function(err) {
-                            if(err) {
+                        fs.writeFile("sent.json", JSON.stringify(sent), "utf8", function (err) {
+                            if (err) {
                                 console.log('file save error');
                                 return console.log(err);
                             }
 
                             console.log("The file was saved!");
                         });
-                        var notificatiome = require('notificatio-me');
-                        notificatiome.send(process.env.HASH,process.env.PHONE,whopwhop)
-                            .then(function(success){ console.log(success)},function(error){console.log(error)});
+                        
+                        notifier.send(process.env.TEXT_MAGIC_KEY,process.env.TEXT_MAGIC_USR, process.env.PHONE, whopwhop)
+                            .then(function (success) {
+                                console.log(success)
+                            }, function (error) {
+                                console.log(error)
+                            });
 
                     }
                 });
