@@ -1,4 +1,6 @@
 var express = require('express');
+var dotenv = require('dotenv');
+dotenv.config(); // load .env into process.env
 var path = require('path');
 var favicon = require('serve-favicon');
 var logger = require('morgan');
@@ -9,7 +11,7 @@ var app = express();
 var request = require('request');
 var cheerio = require('cheerio');
 var constants = require('./constants');
-require('dotenv').load();
+
 var notifier = require('./notifier');
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
