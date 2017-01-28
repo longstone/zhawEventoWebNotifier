@@ -8,9 +8,9 @@ var fs = require("fs");
 var app = express();
 var request = require('request');
 var cheerio = require('cheerio');
+var constants = require('./constants');
 require('dotenv').load();
 var notifier = require('./notifier');
-
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -88,6 +88,21 @@ var requestOptions = function requestOptionsF(key, value) {
     }
     return options;
 };
+/**
+ * get 'HS' or 'FS' according to current date ( August - March is HS -> herbst)
+ * @returns {string}
+ */
+function getHSorFS() {
+    return (new Date().getMonth() > constants.startHS || new Date().getMonth() < constants.endHS ? 'HS' : 'FS' );
+}
+
+function getPeriodYear(){
+    var year = new Date().getFullYear();
+    if(new Date().getMonth() < constants.endHS){
+        year--; // count one year down
+    }
+    return year;
+}
 request.get(baseUrl, requestOptions(), function (err, response, body) {
     if (err) {
         failed(err);
@@ -95,7 +110,7 @@ request.get(baseUrl, requestOptions(), function (err, response, body) {
     }
     // Get the response body (JSON parsed - JSON response or jQuery object in case of XML response)
     var $ = cheerio.load(response.body);
-    var loginUrl = 'https://eventoweb.zhaw.ch/cst_pages/login.aspx';
+    var loginUrl = 'https://eventoweb.zhaw.ch/Evt_Pages/Login.aspx';
     request.get(loginUrl, requestOptions(), function (err, response, body) {
         if (err) {
             failed(err);
@@ -112,7 +127,7 @@ request.get(baseUrl, requestOptions(), function (err, response, body) {
         request.post('https://eventoweb.zhaw.ch/cst_pages/login.aspx',
             requestOptions('form', parameters)
             , function (err, response, body) {
-                if (err) {
+                if (err || body.indexOf('Nicht angemeldet')>=0) {
                     failed(err);
                     return;
                 }
@@ -127,7 +142,7 @@ request.get(baseUrl, requestOptions(), function (err, response, body) {
                         return;
                     }
                     //console.log(response.statusCode);
-                    if (body.indexOf('gesperrt') > -1) {
+                    if ( body.indexOf('gesperrt') < 0) {
                         console.log('hurrra!');
                     }
                     var $ = cheerio.load(response.body);
@@ -139,7 +154,7 @@ request.get(baseUrl, requestOptions(), function (err, response, body) {
 
                             }
                             $(elem).find('td').each(function (index, elem) {
-
+                            //    console.log($(elem).html());
                                 var txt = '';
                                 if ('&#xA0;' !== $(elem).html()) {
                                     txt = $(elem).html();
@@ -186,7 +201,7 @@ request.get(baseUrl, requestOptions(), function (err, response, body) {
                     var sent = require("./sent.json");
                     var whopwhop = '';
 
-                    grades.filter(function(elem){return elem.semester === new Date().getFullYear() + '.'+ (new Date().getMonth() > 9 || new Date().getMonth() < 3 ? 'HS' : 'FS' )}).forEach(function (elem) {
+                    grades.filter(function(elem){return elem.semester === getPeriodYear() + '.'+ getHSorFS()}).forEach(function (elem) {
                         var course = elem.kurs.replace('w.BA.XX.', '').replace('w.MA.XX.', '');
                         course = course + addSpaces(course.length);
                         var line = course + ' : ' + elem.grade;
@@ -208,7 +223,7 @@ request.get(baseUrl, requestOptions(), function (err, response, body) {
 
                     });
                     if (whopwhop === '') {
-                        console.log('no telegram send');
+                        console.log('no message send');
                     } else {
                         fs.writeFile("sent.json", JSON.stringify(sent), "utf8", function (err) {
                             if (err) {

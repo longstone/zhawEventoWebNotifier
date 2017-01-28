@@ -1,16 +1,14 @@
 # zhaw eventoweb grades parser
 
-following variables need to be defined for login purpose:
+you'll need
+
+ * a textmagic account https://www.textmagic.com/
+ * node & npm
+
 
 the file 'sent.json' is used for file persistence..
 
-place an .env file in the folder
+edit the .env file according to your setting.
 
-here is mine:
-longstone:zhawEventoWebNotifier longstone$ tail .env 
-ENV_PW=mypw
-ENV_USR=mymail@students.zhaw.ch
-TEXT_MAGIC_KEY=key-from-text-magic-console
-TEXT_MAGIC_USR=username-from-text-magix-console
-PHONE=+41791234567
-
+run an `npm install
+run with `node app.js` in cron or wathever`
