@@ -23,6 +23,10 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(cookieParser());
 
+process.on('uncaughtException', function (err) {
+    console.log('Caught exception: ' + err);
+});
+
 ['ENV_USR', 'ENV_PW', 'TEXT_MAGIC_KEY', 'TEXT_MAGIC_USR', 'PHONE'].forEach(function (propName) {
     if (!process.env.hasOwnProperty(propName)) {
         console.error('no ' + propName);
