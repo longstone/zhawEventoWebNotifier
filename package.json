@@ -13,7 +13,6 @@
     "dotenv": "^4.0.0",
     "express": "~4.12.4",
     "morgan": "^1.8.1",
-    "notificatio-me": "~1.0.0",
     "request": "^2.58.0",
     "serve-favicon": "~2.2.1",
     "textmagic-rest-client": "0.0.5",
