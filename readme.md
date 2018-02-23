@@ -1,3 +1,5 @@
+!!! I'm not longer attending the ZHAW, so unfortunately I can't support this repository :( !!!
+
 # zhaw eventoweb grades parser
 
 you'll need
